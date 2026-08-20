@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 const root=process.cwd();
 const routes={
   '/':['index.html','text/html; charset=utf-8'],
+  '/admin':['admin.html','text/html; charset=utf-8'],
   '/styles.css':['src/web/styles.css','text/css; charset=utf-8'],
   '/web/app.js':['src/web/app.js','text/javascript; charset=utf-8'],
   '/core/board.js':['src/core/board.js','text/javascript; charset=utf-8'],
