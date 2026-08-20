@@ -1,0 +1,16 @@
+{
+  "name": "xiangqi-lens",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test \"src/**/*.test.js\" \"scripts/*.test.mjs\"",
+    "typecheck": "tsc -p tsconfig.json",
+    "build": "node scripts/build.mjs",
+    "license:check": "node scripts/license-guard.mjs",
+    "verify": "npm run test && npm run typecheck && npm run build && npm run license:check"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  }
+}

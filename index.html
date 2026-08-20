@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#07111f" />
+  <title>XiangqiLens — AI phân tích cờ tướng từ video</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div><div class="brand">XIANGQI<span>LENS</span></div><div class="subtitle">Video → nhận diện thế cờ → AI best move → mũi tên trực tiếp</div></div>
+    <div class="badges"><span>Cloudflare Worker</span><span>Workers AI Vision</span><span>Commercial-safe core</span></div>
+  </header>
+
+  <main class="layout">
+    <section class="panel stage-panel">
+      <div class="panel-head"><h2>1. Video / ảnh bàn cờ</h2><label class="upload">Chọn file<input id="fileInput" type="file" accept="video/*,image/*" /></label></div>
+      <div id="stage" class="stage">
+        <video id="video" controls playsinline></video>
+        <img id="image" alt="Ảnh cờ tướng" />
+        <canvas id="overlay"></canvas>
+        <div id="emptyState" class="empty"><strong>Thả hoặc chọn video/ảnh cờ tướng</strong><span>Video được phân tích theo frame, không cần burn-in/re-encode.</span></div>
+      </div>
+      <div class="controls">
+        <button id="analyzeBtn" class="primary">Phân tích frame hiện tại</button>
+        <button id="autoBtn">Auto: Tắt</button>
+        <button id="calibrateBtn">Hiệu chỉnh 4 góc</button>
+        <button id="clearCalibrationBtn">Reset góc</button>
+      </div>
+      <div class="status-line"><span id="statusDot" class="dot"></span><span id="status">Sẵn sàng</span><span id="confidence"></span></div>
+    </section>
+
+    <aside class="panel analysis-panel">
+      <div class="panel-head"><h2>2. AI đề xuất nước đi</h2><button id="explainBtn" class="ghost">Giải thích</button></div>
+      <div id="topMoves" class="moves"></div>
+      <div class="eval-card"><div class="eval-title">FEN đã xác thực</div><textarea id="fenInput" rows="3" spellcheck="false"></textarea><button id="fenAnalyzeBtn">Phân tích FEN thủ công</button></div>
+      <div class="eval-card"><div class="eval-title">Giải thích AI</div><div id="explanation" class="explanation">Chưa có.</div></div>
+    </aside>
+
+    <section class="panel board-panel">
+      <div class="panel-head"><h2>3. Trusted board state</h2><span id="turnBadge" class="turn">Đỏ đi</span></div>
+      <div id="board" class="board"></div>
+      <div class="hint">Vision chỉ tạo candidate. Xiangqi rules core phải xác nhận trước khi state được tin cậy.</div>
+    </section>
+
+    <section class="panel timeline-panel">
+      <div class="panel-head"><h2>4. Timeline</h2><span id="eventCount">0 trạng thái</span></div>
+      <div id="timeline" class="timeline"><div class="muted">Chưa có dữ liệu phân tích.</div></div>
+    </section>
+  </main>
+  <footer>XiangqiLens v0.1 — engine alpha-beta nội bộ không dùng NNUE/Pikafish weights. Workers AI là lớp vision/fallback, không phải luật cờ.</footer>
+  <script type="module" src="/web/app.js"></script>
+</body>
+</html>
