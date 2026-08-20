@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#07111f" />
+  <title>XiangqiLens Admin</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div><div class="brand">XIANGQI<span>LENS</span></div><div class="subtitle">Admin console</div></div>
+    <div class="badges"><span>Protected</span><span>Cloudflare Worker</span></div>
+  </header>
+  <main class="layout">
+    <section class="panel stage-panel">
+      <div class="panel-head"><h2>Admin access active</h2></div>
+      <div class="eval-card">
+        <div class="eval-title">Trạng thái</div>
+        <p>Bạn đã xác thực bằng tài khoản quản trị của XiangqiLens.</p>
+        <p><a href="/api/admin/health">Mở admin health API</a></p>
+        <p><a href="/">Quay về ứng dụng XiangqiLens</a></p>
+      </div>
+    </section>
+  </main>
+  <footer>XiangqiLens Admin — credentials are stored as Cloudflare Worker secrets, never in Git.</footer>
+</body>
+</html>
