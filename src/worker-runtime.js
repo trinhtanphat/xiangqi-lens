@@ -1,5 +1,6 @@
 const VISION_MODEL='@cf/meta/llama-4-scout-17b-16e-instruct';
 const VISION_PROMPT=`You are a Xiangqi board reconstruction vision system. Inspect the image and return ONLY one JSON object with keys fen, sideToMove, confidence, orientation, boardCorners, notes. Board is 9 files by 10 ranks. FEN uses r,n,b,a,k,c,p for black and uppercase for red, exactly 10 ranks, then w for red-to-move or b for black-to-move. sideToMove is red or black. confidence is 0..1. boardCorners is null or four normalized {x,y} points ordered top-left, top-right, bottom-right, bottom-left. Never invent hidden pieces; lower confidence when occluded.`;
+const ADMIN_REALM='XiangqiLens Admin';
 
 function json(body,status=200,extra={}){
   return new Response(JSON.stringify(body),{status,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store',...extra}});
@@ -49,6 +50,30 @@ function securityHeaders(type){
   return {'content-type':type,'x-content-type-options':'nosniff','referrer-policy':'no-referrer','permissions-policy':'camera=(), microphone=(), geolocation=()','content-security-policy':"default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",'cache-control':type.startsWith('text/html')?'no-cache':'public, max-age=300'};
 }
 async function readJson(request){try{return await request.json();}catch{return null;}}
+function adminConfigured(env){return typeof env?.ADMIN_USERNAME==='string'&&env.ADMIN_USERNAME.length>0&&typeof env?.ADMIN_PASSWORD==='string'&&env.ADMIN_PASSWORD.length>0;}
+function parseBasic(request){
+  const header=request.headers.get('authorization')||'';
+  if(!header.startsWith('Basic '))return null;
+  try{
+    const decoded=atob(header.slice(6));
+    const colon=decoded.indexOf(':');
+    if(colon<0)return null;
+    return {username:decoded.slice(0,colon),password:decoded.slice(colon+1)};
+  }catch{return null;}
+}
+async function sha256(value){return new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value)));}
+async function safeEqual(a,b){
+  const [left,right]=await Promise.all([sha256(a),sha256(b)]);
+  let diff=0; for(let i=0;i<left.length;i++)diff|=left[i]^right[i];
+  return diff===0;
+}
+async function isAdmin(request,env){
+  if(!adminConfigured(env))return false;
+  const credentials=parseBasic(request); if(!credentials)return false;
+  const [userOk,passwordOk]=await Promise.all([safeEqual(credentials.username,env.ADMIN_USERNAME),safeEqual(credentials.password,env.ADMIN_PASSWORD)]);
+  return userOk&&passwordOk;
+}
+function unauthorized(){return json({error:'unauthorized'},401,{'www-authenticate':`Basic realm="${ADMIN_REALM}", charset="UTF-8"`});}
 
 export default {
   async fetch(request,env){
@@ -56,6 +81,12 @@ export default {
     if(url.pathname==='/api/health'){
       if(request.method!=='GET')return json({error:'method_not_allowed'},405,{allow:'GET'});
       return json({ok:true,service:'xiangqi-lens',buildId:env?.BUILD_ID||'dev',ai:Boolean(env?.AI?.run),visionModel:VISION_MODEL});
+    }
+    if(url.pathname==='/api/admin/health'){
+      if(request.method!=='GET')return json({error:'method_not_allowed'},405,{allow:'GET'});
+      if(!adminConfigured(env))return json({error:'admin_not_configured'},503);
+      if(!await isAdmin(request,env))return unauthorized();
+      return json({ok:true,role:'admin',service:'xiangqi-lens',buildId:env?.BUILD_ID||'dev',ai:Boolean(env?.AI?.run)});
     }
     if(url.pathname==='/api/recognize'){
       if(request.method!=='POST')return json({error:'method_not_allowed'},405,{allow:'POST'});
@@ -70,8 +101,14 @@ export default {
       if(!env?.AI?.run)return json({error:'ai_unavailable'},503);
       try{return json({text:await explainWithAi(env,body.fen,body.lines)});}catch(error){return json({error:'explain_failed',message:error instanceof Error?error.message:String(error)},502);}
     }
+    const adminPage=url.pathname==='/admin'||url.pathname==='/admin/';
+    if(adminPage){
+      if(request.method!=='GET'&&request.method!=='HEAD')return new Response('Method Not Allowed',{status:405});
+      if(!adminConfigured(env))return json({error:'admin_not_configured'},503);
+      if(!await isAdmin(request,env))return unauthorized();
+    }
     if(request.method!=='GET'&&request.method!=='HEAD')return new Response('Method Not Allowed',{status:405});
-    const assets=globalThis.__XIANGQI_ASSETS__||{}; const key=url.pathname==='/'?'/':url.pathname; const asset=assets[key];
+    const assets=globalThis.__XIANGQI_ASSETS__||{}; const key=url.pathname==='/'?'/':adminPage?'/admin':url.pathname; const asset=assets[key];
     if(!asset)return new Response('Not Found',{status:404,headers:securityHeaders('text/plain; charset=utf-8')});
     return new Response(request.method==='HEAD'?null:asset.body,{status:200,headers:securityHeaders(asset.type)});
   }
